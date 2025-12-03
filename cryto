@@ -1,0 +1,12 @@
+PORT=4000
+
+SUPABASE_URL='https://cmvdujmyhbxzckfteybv.supabase.co'
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtdmR1am15aGJ4emNrZnRleWJ2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY1NzcxNywiZXhwIjoyMDgwMjMzNzE3fQ.Xv3WPG8Sv2tAQx_tnIogpBhD7T6XbsUz1yG5K7dpcWs
+
+FEE_PERCENT=1.5
+
+# external providers (placeholders)
+COINBASE_COMMERCE_API_KEY=your_key_here
+CHANGELLY_API_KEY=your_key_here
+CHANGELLY_API_SECRET=your_secret_here
+MOOV_API_KEY=your_key_here
