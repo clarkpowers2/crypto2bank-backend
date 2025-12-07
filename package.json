@@ -1,5 +1,6 @@
 {
   "name": "crypto2bank-backend",
+"type": "module",
   "version": "1.0.0",
   "description": "Backend server for Crypto2Bank",
   "main": "src/index.js",
