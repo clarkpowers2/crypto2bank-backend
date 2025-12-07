@@ -11,13 +11,9 @@ function App() {
   const [conversion, setConversion] = useState(null);
   const [payout, setPayout] = useState(null);
 
-  const [adminSummary, setAdminSummary] = useState(null);
-  const [adminActivity, setAdminActivity] = useState(null);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
-
-  // 1) Create a deposit (demo backend)
+  // 1) Create a deposit (Coinbase charge)
   const handleCreateDeposit = async () => {
     try {
       const body = {
@@ -43,7 +39,7 @@ function App() {
       setCreatedDepositId(data.deposit_id);
       setDepositId(data.deposit_id); // auto-fill for conversion
 
-      alert("Deposit created. Use the link (demo) and then convert.");
+      alert("Deposit created. Pay using the hosted link, then convert once confirmed.");
     } catch (err) {
       console.error(err);
       alert("Error creating deposit");
@@ -73,7 +69,7 @@ function App() {
     }
   };
 
-  // 3) Payout to bank (demo)
+  // 3) Payout to bank (fake provider for now)
   const handlePayout = async () => {
     try {
       if (!conversion) {
@@ -81,9 +77,7 @@ function App() {
         return;
       }
 
-      const bankAccountId = prompt(
-        "Enter bankAccountId from Supabase bank_accounts:"
-      );
+      const bankAccountId = prompt("Enter bankAccountId from Supabase bank_accounts:");
       if (!bankAccountId) return;
 
       const res = await fetch(`${backendUrl}/api/payouts`, {
@@ -104,37 +98,11 @@ function App() {
     }
   };
 
-  // 4) Load admin summary (totals)
-  const handleLoadSummary = async () => {
-    try {
-      const res = await fetch(`${backendUrl}/api/admin/summary`);
-      const data = await res.json();
-      if (data.ok) setAdminSummary(data.summary);
-      else alert(data.error || "Failed to load summary");
-    } catch (err) {
-      console.error(err);
-      alert("Error loading summary");
-    }
-  };
-
-  // 5) Load recent activity
-  const handleLoadActivity = async () => {
-    try {
-      const res = await fetch(`${backendUrl}/api/admin/activity`);
-      const data = await res.json();
-      if (data.ok) setAdminActivity(data);
-      else alert(data.error || "Failed to load activity");
-    } catch (err) {
-      console.error(err);
-      alert("Error loading activity");
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col items-center p-8">
       <h1 className="text-4xl font-bold mb-2">Crypto2Bank</h1>
       <p className="text-slate-300 mb-8">
-        Convert crypto to USD and send it to any bank (demo stack).
+        From wallet to bank in one flow.
       </p>
 
       <div className="w-full max-w-3xl grid md:grid-cols-2 gap-8">
@@ -159,7 +127,7 @@ function App() {
             type="number"
             step="0.0001"
             value={amountCrypto}
-            onChange={(e) => setAmountCrypto(e.value)}
+            onChange={(e) => setAmountCrypto(e.target.value)}
             className="w-full mb-4 px-3 py-2 rounded bg-slate-800 border border-slate-700"
           />
 
@@ -172,7 +140,7 @@ function App() {
 
           {hostedUrl && (
             <div className="mt-4 text-sm">
-              <div className="mb-1 font-medium">Hosted payment link (demo):</div>
+              <div className="mb-1 font-medium">Hosted payment link:</div>
               <a
                 href={hostedUrl}
                 target="_blank"
@@ -183,7 +151,7 @@ function App() {
               </a>
               {createdDepositId && (
                 <div className="mt-2 text-xs text-slate-400">
-                  Deposit ID (auto-filled below):<br />
+                  Deposit ID (also auto-filled below):<br />
                   {createdDepositId}
                 </div>
               )}
@@ -193,13 +161,13 @@ function App() {
 
         {/* CONVERT + PAYOUT SECTION */}
         <div className="border border-slate-700 rounded-lg p-5 bg-slate-900">
-          <h2 className="text-xl font-semibold mb-4">2. Convert &amp; Payout</h2>
+          <h2 className="text-xl font-semibold mb-4">2. Convert & Payout</h2>
 
           <label className="block text-sm mb-1">Deposit ID</label>
           <input
             value={depositId}
             onChange={(e) => setDepositId(e.target.value)}
-            placeholder="DepositId from Step 1 or Supabase"
+            placeholder="DepositId from Supabase or Step 1"
             className="w-full mb-3 px-3 py-2 rounded bg-slate-800 border border-slate-700"
           />
 
@@ -212,21 +180,12 @@ function App() {
 
           {conversion && (
             <div className="mt-2 border border-slate-700 rounded p-3 text-sm">
+              <div><strong>Conversion ID:</strong> {conversion.id}</div>
+              <div><strong>Gross:</strong> ${Number(conversion.amount_fiat_gross).toFixed(2)}</div>
               <div>
-                <strong>Conversion ID:</strong> {conversion.id}
+                <strong>Fee:</strong> ${Number(conversion.fee_amount).toFixed(2)} ({conversion.fee_percent}%)
               </div>
-              <div>
-                <strong>Gross:</strong>{" "}
-                ${Number(conversion.amount_fiat_gross).toFixed(2)}
-              </div>
-              <div>
-                <strong>Fee:</strong>{" "}
-                ${Number(conversion.fee_amount).toFixed(2)} (3% + $1.50)
-              </div>
-              <div>
-                <strong>Net:</strong>{" "}
-                ${Number(conversion.amount_fiat_net).toFixed(2)}
-              </div>
+              <div><strong>Net:</strong> ${Number(conversion.amount_fiat_net).toFixed(2)}</div>
 
               <button
                 onClick={handlePayout}
@@ -239,125 +198,16 @@ function App() {
 
           {payout && (
             <div className="mt-3 border border-emerald-600 rounded p-3 text-sm">
-              <div>
-                <strong>Payout ID:</strong> {payout.id}
-              </div>
-              <div>
-                <strong>Status:</strong> {payout.status}
-              </div>
-              <div>
-                <strong>Amount Sent:</strong>{" "}
-                ${Number(payout.amount_fiat).toFixed(2)}
-              </div>
+              <div><strong>Payout ID:</strong> {payout.id}</div>
+              <div><strong>Status:</strong> {payout.status}</div>
+              <div><strong>Amount Sent:</strong> ${Number(payout.amount_fiat).toFixed(2)}</div>
             </div>
           )}
         </div>
-      </div>
-
-      {/* ADMIN SECTION */}
-      <div className="w-full max-w-3xl mt-10 border border-slate-700 rounded-lg p-5 bg-slate-900">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Admin Overview</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={handleLoadSummary}
-              className="px-3 py-1.5 text-sm rounded bg-slate-800 hover:bg-slate-700"
-            >
-              Load Summary
-            </button>
-            <button
-              onClick={handleLoadActivity}
-              className="px-3 py-1.5 text-sm rounded bg-slate-800 hover:bg-slate-700"
-            >
-              Load Activity
-            </button>
-          </div>
-        </div>
-
-        {adminSummary && (
-          <div className="grid grid-cols-3 gap-4 text-sm mb-4">
-            <div>
-              <div className="text-slate-400 text-xs">Total Volume</div>
-              <div className="text-lg font-semibold">
-                $
-                {Number(adminSummary.total_gross ?? 0).toFixed(2)}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-400 text-xs">
-                Total Fees (3% + $1.50)
-              </div>
-              <div className="text-lg font-semibold">
-                $
-                {Number(adminSummary.total_fees ?? 0).toFixed(2)}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-400 text-xs">Total Net to Users</div>
-              <div className="text-lg font-semibold">
-                $
-                {Number(adminSummary.total_net ?? 0).toFixed(2)}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {adminActivity && (
-          <div className="grid md:grid-cols-3 gap-4 text-xs mt-4">
-            <div>
-              <div className="font-semibold mb-1">Recent Deposits</div>
-              {(adminActivity.deposits || []).map((d) => (
-                <div
-                  key={d.id}
-                  className="mb-1 border-b border-slate-800 pb-1"
-                >
-                  <div>
-                    {d.asset} {Number(d.amount_crypto).toFixed(4)}
-                  </div>
-                  <div className="text-slate-400">{d.status}</div>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="font-semibold mb-1">Recent Conversions</div>
-              {(adminActivity.conversions || []).map((c) => (
-                <div
-                  key={c.id}
-                  className="mb-1 border-b border-slate-800 pb-1"
-                >
-                  <div>
-                    ${Number(c.amount_fiat_net).toFixed(2)} net
-                  </div>
-                  <div className="text-slate-400">{c.fiat_currency}</div>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div className="font-semibold mb-1">Recent Payouts</div>
-              {(adminActivity.payouts || []).map((p) => (
-                <div
-                  key={p.id}
-                  className="mb-1 border-b border-slate-800 pb-1"
-                >
-                  <div>
-                    ${Number(p.amount_fiat).toFixed(2)}
-                  </div>
-                  <div className="text-slate-400">{p.status}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {!adminSummary && !adminActivity && (
-          <div className="text-slate-500 text-sm">
-            Click &quot;Load Summary&quot; or &quot;Load Activity&quot; to see
-            system stats.
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 export default App;
+
